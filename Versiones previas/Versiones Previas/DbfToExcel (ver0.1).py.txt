@@ -1,0 +1,33 @@
+import dbfread
+import pandas as pd
+import os
+
+# Directorio donde están los archivos .dbf (cambia esta ruta según tu caso)
+# #directorio = 'ruta/al/directorio'
+directorio = 'D:\TRABAJO\BD\RESTAURANT'
+
+
+# Lista para almacenar los DataFrames
+dfs = []
+
+# Recorre todos los archivos .dbf en el directorio
+for archivo in os.listdir(directorio):
+    if archivo.endswith('.dbf'):
+        try:
+            # Lee el archivo .dbf
+            tabla = dbfread.DBF(os.path.join(directorio, archivo), encoding='latin1')
+            # Convierte a DataFrame
+            df = pd.DataFrame(iter(tabla))
+            # Agrega el DataFrame a la lista
+            dfs.append(df)
+        except Exception as e:
+            print(f"Error al procesar el archivo {archivo}: {e}")
+
+# Combina todos los DataFrames en uno solo (si hay datos)
+if dfs:
+    df_combinado = pd.concat(dfs, ignore_index=True)
+    # Guarda el DataFrame combinado en un archivo Excel
+    df_combinado.to_excel('salida.xlsx', index=False)
+    print("Datos guardados exitosamente en 'salida.xlsx'")
+else:
+    print("No se encontraron archivos .dbf válidos para procesar.")

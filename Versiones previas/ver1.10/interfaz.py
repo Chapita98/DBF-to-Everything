@@ -1,0 +1,162 @@
+import os
+import tkinter as tk
+from tkinter import ttk, messagebox, filedialog
+
+from funciones_conversion import convertir_basico, convertir_avanzado, convertir_total
+from utilidades import obtener_archivos_dbf_en_carpeta
+
+class Aplicacion(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("DBF a Excel v0.9")
+        self.geometry("700x600")
+        self.resizable(False, False)
+
+        self.ruta_entrada = tk.StringVar()
+        self.ruta_salida = tk.StringVar()
+
+        self.opciones = {
+            "centrar_texto": tk.BooleanVar(value=True),
+            "color_alternado": tk.BooleanVar(value=True),
+            "inmovilizar_fila_1": tk.BooleanVar(value=True),
+            "autocolumnas": tk.BooleanVar(value=True),
+            "tamano_encabezado": tk.IntVar(value=12),
+            "tamano_datos": tk.IntVar(value=10),
+            "quitar_x": tk.BooleanVar(value=False)
+        }
+
+        self.archivos_seleccionados = []
+
+        self.crear_widgets()
+
+    def crear_widgets(self):
+        self.tabs = ttk.Notebook(self)
+        self.tabs.pack(fill=tk.BOTH, expand=True)
+
+        self.tab_basico = ttk.Frame(self.tabs)
+        self.tab_avanzado = ttk.Frame(self.tabs)
+        self.tab_total = ttk.Frame(self.tabs)
+
+        self.tabs.add(self.tab_basico, text="Modo Básico")
+        self.tabs.add(self.tab_avanzado, text="Modo Avanzado")
+        self.tabs.add(self.tab_total, text="Modo Total")
+
+        for tab in (self.tab_basico, self.tab_avanzado, self.tab_total):
+            self.crear_selector_rutas(tab)
+
+        self.crear_tabla_archivos(self.tab_basico)
+        self.crear_tabla_archivos(self.tab_avanzado)
+        self.crear_personalizacion(self.tab_avanzado)
+        self.crear_personalizacion(self.tab_total, incluir_tabla=False)
+
+        self.crear_botones_conversion()
+
+    def crear_selector_rutas(self, tab):
+        frame = tk.Frame(tab)
+        frame.pack(pady=10, fill=tk.X)
+
+        tk.Label(frame, text="Carpeta de Entrada:").pack(side=tk.LEFT, padx=5)
+        tk.Entry(frame, textvariable=self.ruta_entrada, width=40).pack(side=tk.LEFT, padx=5)
+        tk.Button(frame, text="Seleccionar Carpeta", command=self.seleccionar_entrada).pack(side=tk.LEFT)
+
+        tk.Label(frame, text="Carpeta de Salida:").pack(side=tk.LEFT, padx=10)
+        tk.Entry(frame, textvariable=self.ruta_salida, width=40).pack(side=tk.LEFT, padx=5)
+        tk.Button(frame, text="Seleccionar Carpeta", command=self.seleccionar_salida).pack(side=tk.LEFT)
+
+    def crear_tabla_archivos(self, tab):
+        frame = tk.Frame(tab)
+        frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10)
+
+        self.tree = ttk.Treeview(frame, columns=("Archivo",), show="headings", selectmode="extended")
+        self.tree.heading("Archivo", text="Archivo DBF")
+        self.tree.pack(fill=tk.BOTH, expand=True)
+
+        botones = tk.Frame(tab)
+        botones.pack(side=tk.LEFT, padx=20, pady=10)
+
+        tk.Button(botones, text="Cargar Archivos", command=self.cargar_archivos).pack(pady=5)
+        tk.Button(botones, text="Seleccionar Todo", command=self.seleccionar_todo).pack(pady=5)
+        tk.Button(botones, text="Limpiar Lista", command=self.limpiar_lista).pack(pady=5)
+
+    def crear_personalizacion(self, tab, incluir_tabla=True):
+        frame = tk.LabelFrame(tab, text="Opciones de Personalización")
+        frame.pack(side=tk.LEFT, padx=10, pady=10, fill=tk.Y)
+
+        tk.Checkbutton(frame, text="Centrar Texto", variable=self.opciones["centrar_texto"]).pack(anchor="w")
+        tk.Checkbutton(frame, text="Color Alternado en Encabezado", variable=self.opciones["color_alternado"]).pack(anchor="w")
+        tk.Checkbutton(frame, text="Inmovilizar Fila 1", variable=self.opciones["inmovilizar_fila_1"]).pack(anchor="w")
+        tk.Checkbutton(frame, text="Ajustar Ancho de Columnas", variable=self.opciones["autocolumnas"]).pack(anchor="w")
+        tk.Checkbutton(frame, text="Quitar letra 'x' inicial en nombres", variable=self.opciones["quitar_x"]).pack(anchor="w")
+
+        tk.Label(frame, text="Tamaño de encabezado:").pack()
+        tk.Spinbox(frame, from_=8, to=24, textvariable=self.opciones["tamano_encabezado"]).pack()
+
+        tk.Label(frame, text="Tamaño de datos:").pack()
+        tk.Spinbox(frame, from_=8, to=24, textvariable=self.opciones["tamano_datos"]).pack()
+
+    def crear_botones_conversion(self):
+        frame = tk.Frame(self)
+        frame.pack(pady=10)
+
+        tk.Button(frame, text="Convertir (Básico)", command=self.convertir_basico).pack(side=tk.LEFT, padx=20)
+        tk.Button(frame, text="Convertir (Avanzado)", command=self.convertir_avanzado).pack(side=tk.LEFT, padx=20)
+        tk.Button(frame, text="Convertir (Total)", command=self.convertir_total).pack(side=tk.LEFT, padx=20)
+
+    def seleccionar_entrada(self):
+        carpeta = filedialog.askdirectory()
+        if carpeta:
+            self.ruta_entrada.set(carpeta)
+            self.cargar_archivos()
+
+    def seleccionar_salida(self):
+        carpeta = filedialog.askdirectory()
+        if carpeta:
+            self.ruta_salida.set(carpeta)
+
+    def cargar_archivos(self):
+        self.tree.delete(*self.tree.get_children())
+        self.archivos_seleccionados = []
+
+        carpeta = self.ruta_entrada.get()
+        if not carpeta or not os.path.isdir(carpeta):
+            return
+
+        archivos = obtener_archivos_dbf_en_carpeta(carpeta)
+        for archivo in archivos:
+            self.tree.insert("", tk.END, values=(archivo,))
+        self.archivos_seleccionados = archivos
+
+    def seleccionar_todo(self):
+        for item in self.tree.get_children():
+            self.tree.selection_add(item)
+
+    def limpiar_lista(self):
+        self.tree.delete(*self.tree.get_children())
+        self.archivos_seleccionados = []
+
+    def convertir_basico(self):
+        salida = self.ruta_salida.get()
+        for item in self.tree.selection():
+            archivo = self.tree.item(item)["values"][0]
+            convertir_basico(os.path.join(self.ruta_entrada.get(), archivo), salida, self.opciones["quitar_x"].get())
+        messagebox.showinfo("Completado", "Conversión básica finalizada.")
+
+    def convertir_avanzado(self):
+        salida = self.ruta_salida.get()
+        for item in self.tree.selection():
+            archivo = self.tree.item(item)["values"][0]
+            convertir_avanzado(os.path.join(self.ruta_entrada.get(), archivo), salida, self.obtener_opciones())
+        messagebox.showinfo("Completado", "Conversión avanzada finalizada.")
+
+    def convertir_total(self):
+        ruta = self.ruta_entrada.get()
+        archivos = obtener_archivos_dbf_en_carpeta(ruta)
+        if not archivos:
+            messagebox.showwarning("Sin archivos", "No hay archivos DBF en la carpeta.")
+            return
+        lista_completa = [os.path.join(ruta, archivo) for archivo in archivos]
+        convertir_total(lista_completa, self.ruta_salida.get(), self.obtener_opciones())
+        messagebox.showinfo("Completado", "Conversión total finalizada.")
+
+    def obtener_opciones(self):
+        return {clave: var.get() for clave, var in self.opciones.items()}
