@@ -1,3 +1,4 @@
 # DBF-to-Everything
-.dbf file converter
-The exe file is in dist/
+.dbf file converter with various mini programs.
+---
+The exe file is in dist/DbfToEverything.exe
