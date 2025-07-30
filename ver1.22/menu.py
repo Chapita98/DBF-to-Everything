@@ -46,8 +46,7 @@ class MenuPrincipal(tk.Tk):
         def cerrar():
             win.destroy()
             self.deiconify()
-
-        # btn10 = tk.Button(frame, text="Extraer TODO el Schema", command=self.abrir_extraer_todo_schema, **button_style)
+            self.centrar_ventana(400, 520)
         win.protocol("WM_DELETE_WINDOW", cerrar)
     def abrir_visualizador_dbf(self):
         from tkinter import messagebox
@@ -60,81 +59,11 @@ class MenuPrincipal(tk.Tk):
         self.centrar_ventana(400, 520)
         self.crear_widgets()
 
-        # btn10.grid(row=2, column=0, columnspan=2, padx=10, pady=7, sticky="ew")
     def centrar_ventana(self, ancho, alto):
         self.update_idletasks()
         pantalla_ancho = self.winfo_screenwidth()
         pantalla_alto = self.winfo_screenheight()
         x = (pantalla_ancho // 2) - (ancho // 2)
-    def abrir_extraer_todo_schema(self):
-        from tkinter import filedialog, messagebox
-        from schema_extractor import extraer_schema
-        import os
-        self.withdraw()
-        win = tk.Toplevel(self)
-        win.title("Extraer TODO el Schema de DBF")
-        win.resizable(False, False)
-        self.update_idletasks()
-        ancho, alto = 520, 200
-        x = self.winfo_screenwidth() // 2 - ancho // 2
-        y = self.winfo_screenheight() // 2 - alto // 2
-        win.geometry(f"{ancho}x{alto}+{x}+{y}")
-
-        tk.Label(win, text="Selecciona la carpeta RAÍZ con subcarpetas de DBF:").pack(pady=10)
-        carpeta_origen = tk.StringVar()
-        tk.Entry(win, textvariable=carpeta_origen, width=60).pack(pady=2)
-        def sel_origen():
-            carpeta = filedialog.askdirectory(title="Seleccionar carpeta raíz de DBF")
-            if carpeta:
-                carpeta_origen.set(carpeta)
-        tk.Button(win, text="Buscar carpeta", command=sel_origen).pack(pady=2)
-
-        tk.Label(win, text="Carpeta de destino para los schemas:").pack(pady=10)
-        carpeta_destino = tk.StringVar()
-        tk.Entry(win, textvariable=carpeta_destino, width=60).pack(pady=2)
-        def sel_dest():
-            carpeta = filedialog.askdirectory(title="Seleccionar carpeta de destino")
-            if carpeta:
-                carpeta_destino.set(carpeta)
-        tk.Button(win, text="Seleccionar carpeta destino", command=sel_dest).pack(pady=2)
-
-        def ejecutar():
-            origen = carpeta_origen.get()
-            destino = carpeta_destino.get()
-            if not origen or not destino:
-                messagebox.showerror("Error", "Selecciona ambas carpetas.")
-                return
-            errores = []
-            total = 0
-            for root, dirs, files in os.walk(origen):
-                rel_path = os.path.relpath(root, origen)
-                dest_dir = os.path.join(destino, rel_path) if rel_path != '.' else destino
-                if not os.path.exists(dest_dir):
-                    os.makedirs(dest_dir)
-                for file in files:
-                    if file.lower().endswith('.dbf'):
-                        ruta_dbf = os.path.join(root, file)
-                        nombre = os.path.splitext(file)[0]
-                        ruta_sql = os.path.join(dest_dir, f"{nombre}.sql")
-                        try:
-                            extraer_schema(ruta_dbf, ruta_sql, constraints={})
-                            total += 1
-                        except Exception as e:
-                            errores.append(f"{ruta_dbf}: {e}")
-            if errores:
-                messagebox.showwarning("Completado con errores", f"Se procesaron {total} archivos. Algunos archivos no se procesaron:\n" + "\n".join(errores))
-            else:
-                messagebox.showinfo("Completado", f"Schemas extraídos correctamente. Total: {total}")
-            win.destroy()
-            self.deiconify()
-
-        tk.Button(win, text="Extraer TODO el Schema", command=ejecutar).pack(pady=10)
-        def cerrar():
-            win.destroy()
-            self.deiconify()
-            self.centrar_ventana(400, 520)
-        win.protocol("WM_DELETE_WINDOW", cerrar)
-        pantalla_alto = self.winfo_screenheight()
         y = (pantalla_alto // 2) - (alto // 2)
         self.geometry(f"{ancho}x{alto}+{x}+{y}")
         self.minsize(ancho, alto)
@@ -166,14 +95,15 @@ class MenuPrincipal(tk.Tk):
         btn2 = tk.Button(frame, text="Extraer Schema", command=self.abrir_extraer_schema, **button_style)
         btn3 = tk.Button(frame, text="Dbf to CSV", command=self.abrir_dfb_to_csv, **button_style)
         btn4 = tk.Button(frame, text="Dbf a JSON", command=self.abrir_dbf_a_json, **button_style)
+
+        # Segunda columna
         btn5 = tk.Button(frame, text="Visualizar DBF", command=self.abrir_visualizador_dbf, **button_style)
         btn6 = tk.Button(frame, text="Renombrar campos", command=self.abrir_renombrar_campos, **button_style)
         btn7 = tk.Button(frame, text="Fusionar DBFs", command=self.abrir_fusionar_dbfs, **button_style)
         btn8 = tk.Button(frame, text="Estadísticas DBF", command=self.abrir_estadisticas_dbf, **button_style)
         btn9 = tk.Button(frame, text="Validar integridad", command=self.abrir_validar_integridad, **button_style)
-        btn10 = tk.Button(frame, text="Extraer TODO el Schema", command=self.abrir_extraer_todo_schema, **button_style)
 
-        # Distribución en 2 columnas (6 filas)
+        # Distribución en 2 columnas (5 filas)
         btn1.grid(row=0, column=0, padx=10, pady=7)
         btn2.grid(row=0, column=1, padx=10, pady=7)
         btn3.grid(row=1, column=0, padx=10, pady=7)
@@ -183,7 +113,6 @@ class MenuPrincipal(tk.Tk):
         btn7.grid(row=3, column=0, padx=10, pady=7)
         btn8.grid(row=3, column=1, padx=10, pady=7)
         btn9.grid(row=4, column=0, columnspan=2, padx=10, pady=7, sticky="ew")
-        btn10.grid(row=5, column=0, columnspan=2, padx=10, pady=7, sticky="ew")
 
     # --- Nuevas funciones de botones ---
     def abrir_extraer_schema(self):
