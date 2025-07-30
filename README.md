@@ -10,6 +10,7 @@ Convierte archivos .dbf a varios formatos y ofrece utilidades adicionales (Excel
 
 2. Selecciona la función deseada desde el menú principal:
    - **Dbf to Excel**: Convierte archivos DBF a Excel (.xlsx).
+   - **Convertir Raíz a Excel**: Convierte todos los archivos DBF de una carpeta raíz (y subcarpetas) a Excel, replicando la estructura de carpetas. Si un archivo supera el máximo de filas de Excel, se omite y se notifica.
    - **Extraer Schema**: Extrae el esquema SQL de uno o varios DBF.
    - **Dbf to CSV**: Convierte DBF a CSV.
    - **Dbf a JSON**: Convierte DBF a JSON.

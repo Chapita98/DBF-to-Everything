@@ -5,6 +5,102 @@ import sys
 from interfaz import Aplicacion
 
 class MenuPrincipal(tk.Tk):
+    def abrir_convertir_raiz_excel(self):
+        from funciones_conversion import convertir_dbf_a_dataframe, guardar_dataframe_como_excel, MAX_FILAS_EXCEL
+        from tkinter import filedialog, messagebox
+        import os
+        self.withdraw()
+        win = tk.Toplevel(self)
+        win.title("Convertir Raíz a Excel")
+        win.resizable(False, False)
+        ancho, alto = 520, 260
+        win.update_idletasks()
+        pantalla_ancho = win.winfo_screenwidth()
+        pantalla_alto = win.winfo_screenheight()
+        x = (pantalla_ancho // 2) - (ancho // 2)
+        y = (pantalla_alto // 2) - (alto // 2)
+        win.geometry(f"{ancho}x{alto}+{x}+{y}")
+        win.minsize(ancho, alto)
+        win.maxsize(ancho, alto)
+
+        tk.Label(win, text="Selecciona la carpeta RAÍZ con subcarpetas de DBF:").pack(pady=(10,2))
+        carpeta_origen = tk.StringVar()
+        entry_origen = tk.Entry(win, textvariable=carpeta_origen, width=60)
+        entry_origen.pack(pady=2)
+        def sel_origen():
+            carpeta = filedialog.askdirectory(title="Seleccionar carpeta raíz de DBF")
+            if carpeta:
+                carpeta_origen.set(carpeta)
+        btn_origen = tk.Button(win, text="Seleccionar carpeta de entrada", command=sel_origen)
+        btn_origen.pack(pady=2)
+
+        tk.Label(win, text="Carpeta de destino para los Excel:").pack(pady=(10,2))
+        carpeta_destino = tk.StringVar()
+        entry_dest = tk.Entry(win, textvariable=carpeta_destino, width=60)
+        entry_dest.pack(pady=2)
+        def sel_dest():
+            carpeta = filedialog.askdirectory(title="Seleccionar carpeta de destino")
+            if carpeta:
+                carpeta_destino.set(carpeta)
+        btn_dest = tk.Button(win, text="Seleccionar carpeta de salida", command=sel_dest)
+        btn_dest.pack(pady=2)
+
+        def ejecutar():
+            from utilidades import registrar_evento
+            origen = carpeta_origen.get()
+            destino = carpeta_destino.get()
+            if not origen or not destino:
+                messagebox.showerror("Error", "Selecciona ambas carpetas.")
+                registrar_evento("Convertir Raíz a Excel - 0 - FALLO - No se seleccionaron ambas carpetas")
+                return
+            errores = []
+            total = 0
+            omitidos = []
+            for root, dirs, files in os.walk(origen):
+                rel_path = os.path.relpath(root, origen)
+                dest_dir = os.path.join(destino, rel_path) if rel_path != '.' else destino
+                if not os.path.exists(dest_dir):
+                    os.makedirs(dest_dir)
+                for file in files:
+                    if file.lower().endswith('.dbf'):
+                        ruta_dbf = os.path.join(root, file)
+                        nombre = os.path.splitext(file)[0]
+                        ruta_excel = os.path.join(dest_dir, f"{nombre}.xlsx")
+                        try:
+                            df = convertir_dbf_a_dataframe(ruta_dbf)
+                            if len(df) > MAX_FILAS_EXCEL:
+                                omitidos.append(f"{ruta_dbf} (más de {MAX_FILAS_EXCEL} filas)")
+                                continue
+                            guardar_dataframe_como_excel(df, ruta_excel)
+                            total += 1
+                        except Exception as e:
+                            errores.append(f"{ruta_dbf}: {e}")
+            msg = f"Archivos convertidos: {total}"
+            if omitidos:
+                msg += f"\nOmitidos por tamaño: {len(omitidos)}\n" + "\n".join(omitidos[:3])
+                if len(omitidos) > 3:
+                    msg += "\n..."
+            if errores:
+                msg += f"\nErrores: {len(errores)}\n" + "\n".join(errores[:3])
+                if len(errores) > 3:
+                    msg += "\n..."
+                messagebox.showwarning("Completado con errores", msg)
+                nota = f"Errores: {' | '.join(errores[:3])}{' ...' if len(errores)>3 else ''}"
+                registrar_evento(f"Convertir Raíz a Excel - {total} - FALLO - {nota}")
+            else:
+                messagebox.showinfo("Completado", msg)
+                registrar_evento(f"Convertir Raíz a Excel - {total} - EXITO")
+            win.destroy()
+            self.deiconify()
+
+        btn_iniciar = tk.Button(win, text="Iniciar Conversión", command=ejecutar, bg="#4A90E2", fg="white", font=("Arial", 12, "bold"))
+        btn_iniciar.pack(pady=(30, 10))
+
+        def cerrar():
+            win.destroy()
+            self.deiconify()
+            self.centrar_ventana(400, 520)
+        win.protocol("WM_DELETE_WINDOW", cerrar)
     def abrir_dbf_a_json(self):
         from funciones_extra import dbf_a_json
         from tkinter import filedialog, messagebox
@@ -62,9 +158,9 @@ class MenuPrincipal(tk.Tk):
         from utilidades import centrar_ventana
         self.title("Menú de Programas")
         self.resizable(False, False)
-        centrar_ventana(self, 400, 520)
-        self.minsize(400, 520)
-        self.maxsize(400, 520)
+        centrar_ventana(self, 400, 570)
+        self.minsize(400, 570)
+        self.maxsize(400, 570)
         self.crear_widgets()
 
         # btn10.grid(row=2, column=0, columnspan=2, padx=10, pady=7, sticky="ew")
@@ -186,6 +282,7 @@ class MenuPrincipal(tk.Tk):
 
         # Primera columna
         btn1 = tk.Button(frame, text="Dbf to Excel", command=self.abrir_dfb_to_excel, **button_style)
+        btn11 = tk.Button(frame, text="Convertir Raíz a Excel", command=self.abrir_convertir_raiz_excel, **button_style)
         btn2 = tk.Button(frame, text="Extraer Schema", command=self.abrir_extraer_schema, **button_style)
         btn3 = tk.Button(frame, text="Dbf to CSV", command=self.abrir_dfb_to_csv, **button_style)
         btn4 = tk.Button(frame, text="Dbf a JSON", command=self.abrir_dbf_a_json, **button_style)
@@ -207,6 +304,7 @@ class MenuPrincipal(tk.Tk):
         btn8.grid(row=3, column=1, padx=10, pady=7)
         btn9.grid(row=4, column=0, columnspan=2, padx=10, pady=7, sticky="ew")
         btn10.grid(row=5, column=0, columnspan=2, padx=10, pady=7, sticky="ew")
+        btn11.grid(row=6, column=0, columnspan=2, padx=10, pady=7, sticky="ew")
 
     # --- Nuevas funciones de botones ---
     def abrir_extraer_schema(self):
