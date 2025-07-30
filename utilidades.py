@@ -1,3 +1,13 @@
+import datetime
+def registrar_evento(mensaje):
+    """Agrega un mensaje con timestamp al registro de logs/registro_programa.txt"""
+    ruta_log = os.path.join(os.path.dirname(__file__), 'logs', 'registro_programa.txt')
+    timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    try:
+        with open(ruta_log, 'a', encoding='utf-8') as f:
+            f.write(f"[{timestamp}] {mensaje}\n")
+    except Exception as e:
+        print(f"No se pudo escribir en el log: {e}")
 def centrar_ventana(ventana, ancho, alto):
     ventana.update_idletasks()
     pantalla_ancho = ventana.winfo_screenwidth()

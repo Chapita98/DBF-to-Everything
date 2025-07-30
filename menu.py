@@ -55,9 +55,12 @@ class MenuPrincipal(tk.Tk):
 
     def __init__(self):
         super().__init__()
+        from utilidades import centrar_ventana
         self.title("Menú de Programas")
         self.resizable(False, False)
-        self.centrar_ventana(400, 520)
+        centrar_ventana(self, 400, 520)
+        self.minsize(400, 520)
+        self.maxsize(400, 520)
         self.crear_widgets()
 
         # btn10.grid(row=2, column=0, columnspan=2, padx=10, pady=7, sticky="ew")
@@ -74,11 +77,16 @@ class MenuPrincipal(tk.Tk):
         win = tk.Toplevel(self)
         win.title("Extraer TODO el Schema de DBF")
         win.resizable(False, False)
-        self.update_idletasks()
         ancho, alto = 520, 200
-        x = self.winfo_screenwidth() // 2 - ancho // 2
-        y = self.winfo_screenheight() // 2 - alto // 2
+        # Centrar la ventana
+        win.update_idletasks()
+        pantalla_ancho = win.winfo_screenwidth()
+        pantalla_alto = win.winfo_screenheight()
+        x = (pantalla_ancho // 2) - (ancho // 2)
+        y = (pantalla_alto // 2) - (alto // 2)
         win.geometry(f"{ancho}x{alto}+{x}+{y}")
+        win.minsize(ancho, alto)
+        win.maxsize(ancho, alto)
 
         tk.Label(win, text="Selecciona la carpeta RAÍZ con subcarpetas de DBF:").pack(pady=10)
         carpeta_origen = tk.StringVar()
@@ -89,15 +97,23 @@ class MenuPrincipal(tk.Tk):
                 carpeta_origen.set(carpeta)
         tk.Button(win, text="Buscar carpeta", command=sel_origen).pack(pady=2)
 
+
         tk.Label(win, text="Carpeta de destino para los schemas:").pack(pady=10)
         carpeta_destino = tk.StringVar()
-        tk.Entry(win, textvariable=carpeta_destino, width=60).pack(pady=2)
+        frame_destino = tk.Frame(win)
+        frame_destino.pack(fill="x", pady=2)
+        entry_dest = tk.Entry(frame_destino, textvariable=carpeta_destino, width=45)
+        entry_dest.pack(side="left", padx=(0,10), expand=True, fill="x")
         def sel_dest():
             carpeta = filedialog.askdirectory(title="Seleccionar carpeta de destino")
             if carpeta:
                 carpeta_destino.set(carpeta)
-        tk.Button(win, text="Seleccionar carpeta destino", command=sel_dest).pack(pady=2)
+        btn_sel_dest = tk.Button(frame_destino, text="Seleccionar carpeta destino", command=sel_dest)
+        btn_sel_dest.pack(side="left", padx=(0,10))
+        btn_iniciar = tk.Button(frame_destino, text="Iniciar Conversión", command=lambda: ejecutar(), bg="#4A90E2", fg="white", font=("Arial", 12, "bold"))
+        btn_iniciar.pack(side="right", padx=(10,0))
 
+        # Botón para iniciar el proceso
         def ejecutar():
             origen = carpeta_origen.get()
             destino = carpeta_destino.get()
@@ -128,17 +144,14 @@ class MenuPrincipal(tk.Tk):
             win.destroy()
             self.deiconify()
 
-        tk.Button(win, text="Extraer TODO el Schema", command=ejecutar).pack(pady=10)
+        btn_extraer = tk.Button(win, text="Extraer TODO el Schema", command=ejecutar, bg="#4A90E2", fg="white", font=("Arial", 12, "bold"))
+        btn_extraer.pack(pady=15)
+
         def cerrar():
             win.destroy()
             self.deiconify()
             self.centrar_ventana(400, 520)
         win.protocol("WM_DELETE_WINDOW", cerrar)
-        pantalla_alto = self.winfo_screenheight()
-        y = (pantalla_alto // 2) - (alto // 2)
-        self.geometry(f"{ancho}x{alto}+{x}+{y}")
-        self.minsize(ancho, alto)
-        self.maxsize(ancho, alto)
 
     def crear_widgets(self):
         # Título centrado arriba de los botones

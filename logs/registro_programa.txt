@@ -1,0 +1,4 @@
+# Este archivo contendrá los registros de las acciones realizadas por el programa.
+# Cada línea representa una acción o evento relevante.
+# Ejemplo de línea:
+# [2025-07-30 12:00:00] Conversión de DBF a Excel: archivo.dbf -> archivo.xlsx
