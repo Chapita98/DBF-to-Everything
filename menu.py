@@ -34,14 +34,18 @@ class MenuPrincipal(tk.Tk):
                 ruta_json.set(ruta)
         tk.Button(win, text="Guardar como...", command=sel_json).pack(pady=2)
         def ejecutar():
+            from utilidades import registrar_evento
             if not ruta_dbf.get() or not ruta_json.get():
                 messagebox.showerror("Error", "Selecciona ambos archivos.")
+                registrar_evento("Dbf a JSON - 0 - FALLO - No se seleccionaron ambos archivos")
                 return
             ok, msg = dbf_a_json(ruta_dbf.get(), ruta_json.get())
             if ok:
                 messagebox.showinfo("Listo", msg)
+                registrar_evento(f"Dbf a JSON - 1 - EXITO")
             else:
                 messagebox.showerror("Error", msg)
+                registrar_evento(f"Dbf a JSON - 1 - FALLO - {msg}")
         tk.Button(win, text="Convertir a JSON", command=ejecutar).pack(pady=10)
         def cerrar():
             win.destroy()
@@ -115,10 +119,12 @@ class MenuPrincipal(tk.Tk):
 
         # Botón para iniciar el proceso
         def ejecutar():
+            from utilidades import registrar_evento
             origen = carpeta_origen.get()
             destino = carpeta_destino.get()
             if not origen or not destino:
                 messagebox.showerror("Error", "Selecciona ambas carpetas.")
+                registrar_evento("Extraer TODO el Schema - 0 - FALLO - No se seleccionaron ambas carpetas")
                 return
             errores = []
             total = 0
@@ -139,8 +145,11 @@ class MenuPrincipal(tk.Tk):
                             errores.append(f"{ruta_dbf}: {e}")
             if errores:
                 messagebox.showwarning("Completado con errores", f"Se procesaron {total} archivos. Algunos archivos no se procesaron:\n" + "\n".join(errores))
+                nota = f"Errores: {' | '.join(errores[:3])}{' ...' if len(errores)>3 else ''}"
+                registrar_evento(f"Extraer TODO el Schema - {total} - FALLO - {nota}")
             else:
                 messagebox.showinfo("Completado", f"Schemas extraídos correctamente. Total: {total}")
+                registrar_evento(f"Extraer TODO el Schema - {total} - EXITO")
             win.destroy()
             self.deiconify()
 
@@ -234,26 +243,36 @@ class MenuPrincipal(tk.Tk):
         tk.Button(win, text="Seleccionar carpeta", command=sel_dest).pack(pady=2)
 
         def ejecutar():
+            from utilidades import registrar_evento
             archivos = rutas_dbf.get().split(";")
             carpeta = carpeta_destino.get()
             if not archivos or not archivos[0]:
                 messagebox.showerror("Error", "Debes seleccionar al menos un archivo DBF.")
+                registrar_evento("Extraer Schema - 0 - FALLO - No se seleccionaron archivos")
                 return
             if not carpeta:
                 messagebox.showerror("Error", "Debes seleccionar la carpeta de destino.")
+                registrar_evento("Extraer Schema - 0 - FALLO - No se seleccionó carpeta de destino")
                 return
             errores = []
+            total = 0
             for ruta_dbf in archivos:
+                if not ruta_dbf.strip():
+                    continue
                 nombre = os.path.splitext(os.path.basename(ruta_dbf))[0]
                 ruta_sql = os.path.join(carpeta, f"{nombre}.sql")
                 try:
                     extraer_schema(ruta_dbf, ruta_sql, constraints={})
+                    total += 1
                 except Exception as e:
                     errores.append(f"{nombre}: {e}")
             if errores:
                 messagebox.showwarning("Completado con errores", "Algunos archivos no se procesaron:\n" + "\n".join(errores))
+                nota = f"Errores: {' | '.join(errores[:3])}{' ...' if len(errores)>3 else ''}"
+                registrar_evento(f"Extraer Schema - {total} - FALLO - {nota}")
             else:
                 messagebox.showinfo("Completado", "Schemas extraídos correctamente.")
+                registrar_evento(f"Extraer Schema - {total} - EXITO")
             win.destroy()
             self.deiconify()
 
@@ -311,15 +330,19 @@ class MenuPrincipal(tk.Tk):
                 ruta_csv.set(ruta)
         tk.Button(win, text="Guardar como...", command=sel_csv).pack(pady=2)
         def ejecutar():
+            from utilidades import registrar_evento
             if not ruta_dbf.get() or not ruta_csv.get() or not nombres.get():
                 messagebox.showerror("Error", "Completa todos los campos.")
+                registrar_evento("Renombrar campos - 0 - FALLO - Faltan campos")
                 return
             nuevos = [n.strip() for n in nombres.get().split(",")]
             ok, msg = renombrar_campos_dbf(ruta_dbf.get(), nuevos, ruta_csv.get())
             if ok:
                 messagebox.showinfo("Listo", msg)
+                registrar_evento(f"Renombrar campos - 1 - EXITO")
             else:
                 messagebox.showerror("Error", msg)
+                registrar_evento(f"Renombrar campos - 1 - FALLO - {msg}")
         tk.Button(win, text="Renombrar y exportar", command=ejecutar).pack(pady=10)
         def cerrar():
             win.destroy()
@@ -356,15 +379,19 @@ class MenuPrincipal(tk.Tk):
                 ruta_csv.set(ruta)
         tk.Button(win, text="Guardar como...", command=sel_csv).pack(pady=2)
         def ejecutar():
+            from utilidades import registrar_evento
             if not rutas_dbf.get() or not ruta_csv.get():
                 messagebox.showerror("Error", "Selecciona archivos y salida.")
+                registrar_evento("Fusionar DBFs - 0 - FALLO - Faltan archivos o salida")
                 return
-            lista = [r.strip() for r in rutas_dbf.get().split(",")]
+            lista = [r.strip() for r in rutas_dbf.get().split(",") if r.strip()]
             ok, msg = fusionar_dbfs(lista, ruta_csv.get())
             if ok:
                 messagebox.showinfo("Listo", msg)
+                registrar_evento(f"Fusionar DBFs - {len(lista)} - EXITO")
             else:
                 messagebox.showerror("Error", msg)
+                registrar_evento(f"Fusionar DBFs - {len(lista)} - FALLO - {msg}")
         tk.Button(win, text="Fusionar", command=ejecutar).pack(pady=10)
         def cerrar():
             win.destroy()
@@ -393,15 +420,19 @@ class MenuPrincipal(tk.Tk):
                 ruta_dbf.set(ruta)
         tk.Button(win, text="Buscar", command=sel_dbf).pack(pady=2)
         def mostrar():
+            from utilidades import registrar_evento
             if not ruta_dbf.get():
                 messagebox.showerror("Error", "Selecciona un archivo DBF.")
+                registrar_evento("Estadísticas DBF - 0 - FALLO - No se seleccionó archivo")
                 return
             stats = estadisticas_dbf(ruta_dbf.get())
             if "error" in stats:
                 messagebox.showerror("Error", stats["error"])
+                registrar_evento(f"Estadísticas DBF - 0 - FALLO - {stats['error']}")
                 return
             info = f"Registros: {stats['registros']}\nCampos: {', '.join(stats['campos'])}\nTipos: {stats['tipos']}"
             messagebox.showinfo("Estadísticas", info)
+            registrar_evento(f"Estadísticas DBF - 1 - EXITO")
         tk.Button(win, text="Mostrar estadísticas", command=mostrar).pack(pady=10)
         def cerrar():
             win.destroy()
@@ -430,14 +461,18 @@ class MenuPrincipal(tk.Tk):
                 ruta_dbf.set(ruta)
         tk.Button(win, text="Buscar", command=sel_dbf).pack(pady=2)
         def ejecutar():
+            from utilidades import registrar_evento
             if not ruta_dbf.get():
                 messagebox.showerror("Error", "Selecciona un archivo DBF.")
+                registrar_evento("Validar integridad - 0 - FALLO - No se seleccionó archivo")
                 return
             ok, msg = validar_integridad_dbf(ruta_dbf.get())
             if ok:
                 messagebox.showinfo("Integridad", msg)
+                registrar_evento(f"Validar integridad - 1 - EXITO")
             else:
                 messagebox.showerror("Integridad", msg)
+                registrar_evento(f"Validar integridad - 1 - FALLO - {msg}")
         tk.Button(win, text="Validar", command=ejecutar).pack(pady=10)
         def cerrar():
             win.destroy()

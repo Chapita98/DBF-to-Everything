@@ -106,43 +106,65 @@ def verificar_tamanio(df):
     return None
 
 def convertir_basico(ruta_entrada, ruta_salida, quitar_x):
+    from utilidades import registrar_evento
     nombre_base = obtener_nombre_archivo_sin_extension(ruta_entrada)
     if quitar_x and nombre_base.lower().startswith("x"):
         nombre_base = nombre_base[1:]
     ruta_salida = os.path.join(ruta_salida, f"{nombre_base}.xlsx")
     ruta_salida = verificar_existencia_archivo(ruta_salida)
-    df = convertir_dbf_a_dataframe(ruta_entrada)
-    fragmentar = verificar_tamanio(df)
-    guardar_dataframe_como_excel(df, ruta_salida,
-                                 fragmento_hojas=(fragmentar == "hojas"),
-                                 fragmento_archivos=(fragmentar == "archivos"))
+    try:
+        df = convertir_dbf_a_dataframe(ruta_entrada)
+        fragmentar = verificar_tamanio(df)
+        guardar_dataframe_como_excel(df, ruta_salida,
+                                     fragmento_hojas=(fragmentar == "hojas"),
+                                     fragmento_archivos=(fragmentar == "archivos"))
+        registrar_evento(f"Dbf to Excel - 1 - EXITO")
+    except Exception as e:
+        registrar_evento(f"Dbf to Excel - 1 - FALLO - {e}")
 
 def convertir_avanzado(ruta_entrada, ruta_salida, opciones):
+    from utilidades import registrar_evento
     nombre_base = obtener_nombre_archivo_sin_extension(ruta_entrada)
     if opciones.get("quitar_x", False) and nombre_base.lower().startswith("x"):
         nombre_base = nombre_base[1:]
     ruta_salida = os.path.join(ruta_salida, f"{nombre_base}.xlsx")
     ruta_salida = verificar_existencia_archivo(ruta_salida)
-    df = convertir_dbf_a_dataframe(ruta_entrada)
-    fragmentar = verificar_tamanio(df)
-    guardar_dataframe_como_excel(df, ruta_salida,
-                                 fragmento_hojas=(fragmentar == "hojas"),
-                                 fragmento_archivos=(fragmentar == "archivos"))
-    aplicar_personalizacion_excel(ruta_salida, opciones)
-
-def convertir_total(lista_rutas, ruta_salida_carpeta, opciones):
-    for ruta_entrada in lista_rutas:
-        nombre_archivo = obtener_nombre_archivo_sin_extension(ruta_entrada)
-        if opciones.get("quitar_x", False) and nombre_archivo.lower().startswith("x"):
-            nombre_archivo = nombre_archivo[1:]
-        ruta_salida = os.path.join(ruta_salida_carpeta, f"{nombre_archivo}.xlsx")
-        ruta_salida = verificar_existencia_archivo(ruta_salida)
+    try:
         df = convertir_dbf_a_dataframe(ruta_entrada)
         fragmentar = verificar_tamanio(df)
         guardar_dataframe_como_excel(df, ruta_salida,
                                      fragmento_hojas=(fragmentar == "hojas"),
                                      fragmento_archivos=(fragmentar == "archivos"))
         aplicar_personalizacion_excel(ruta_salida, opciones)
+        registrar_evento(f"Dbf to Excel Avanzado - 1 - EXITO")
+    except Exception as e:
+        registrar_evento(f"Dbf to Excel Avanzado - 1 - FALLO - {e}")
+
+def convertir_total(lista_rutas, ruta_salida_carpeta, opciones):
+    from utilidades import registrar_evento
+    exitos = 0
+    fallos = 0
+    for ruta_entrada in lista_rutas:
+        nombre_archivo = obtener_nombre_archivo_sin_extension(ruta_entrada)
+        if opciones.get("quitar_x", False) and nombre_archivo.lower().startswith("x"):
+            nombre_archivo = nombre_archivo[1:]
+        ruta_salida = os.path.join(ruta_salida_carpeta, f"{nombre_archivo}.xlsx")
+        ruta_salida = verificar_existencia_archivo(ruta_salida)
+        try:
+            df = convertir_dbf_a_dataframe(ruta_entrada)
+            fragmentar = verificar_tamanio(df)
+            guardar_dataframe_como_excel(df, ruta_salida,
+                                         fragmento_hojas=(fragmentar == "hojas"),
+                                         fragmento_archivos=(fragmentar == "archivos"))
+            aplicar_personalizacion_excel(ruta_salida, opciones)
+            exitos += 1
+        except Exception as e:
+            registrar_evento(f"Dbf to Excel Total - 1 - FALLO - {ruta_entrada}: {e}")
+            fallos += 1
+    if fallos:
+        registrar_evento(f"Dbf to Excel Total - {len(lista_rutas)} - FALLO - {fallos} fallos")
+    else:
+        registrar_evento(f"Dbf to Excel Total - {len(lista_rutas)} - EXITO")
     
 def guardar_dataframe_como_csv(df, ruta_salida):
     df.to_csv(ruta_salida, index=False)
