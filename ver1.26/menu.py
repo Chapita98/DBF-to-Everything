@@ -150,7 +150,6 @@ class MenuPrincipal(tk.Tk):
         btn_dest.pack(pady=2)
 
         def ejecutar():
-            import traceback
             from utilidades import registrar_evento
             origen = carpeta_origen.get()
             destino = carpeta_destino.get()
@@ -161,8 +160,6 @@ class MenuPrincipal(tk.Tk):
             errores = []
             total = 0
             omitidos = []
-            detalles_errores = []
-            archivos_dbf = []
             for root, dirs, files in os.walk(origen):
                 rel_path = os.path.relpath(root, origen)
                 dest_dir = os.path.join(destino, rel_path) if rel_path != '.' else destino
@@ -173,77 +170,32 @@ class MenuPrincipal(tk.Tk):
                         ruta_dbf = os.path.join(root, file)
                         nombre = os.path.splitext(file)[0]
                         ruta_excel = os.path.join(dest_dir, f"{nombre}.xlsx")
-                        archivos_dbf.append((ruta_dbf, ruta_excel))
-
-            total_archivos = len(archivos_dbf)
-            progreso_var = tk.StringVar()
-            progreso_var.set(f"0/{total_archivos} archivos convertidos")
-            progreso_label = tk.Label(win, textvariable=progreso_var, font=("Arial", 11, "bold"), fg="#4A90E2")
-            progreso_label.pack(pady=(5, 0))
-
-            pendientes = []
-            for idx, (ruta_dbf, ruta_excel) in enumerate(archivos_dbf):
-                try:
-                    df = convertir_dbf_a_dataframe(ruta_dbf)
-                    if len(df) > MAX_FILAS_EXCEL:
-                        omitidos.append(f"{ruta_dbf} (más de {MAX_FILAS_EXCEL} filas)")
-                        continue
-                    guardar_dataframe_como_excel(df, ruta_excel)
-                    total += 1
-                except Exception as e:
-                    # Si el error es de tipo no reconocido, dejar para el final
-                    if "tipo" in str(e).lower() or "type" in str(e).lower():
-                        pendientes.append((ruta_dbf, ruta_excel, traceback.format_exc()))
-                    else:
-                        err_text = f"{ruta_dbf}: {e}"
-                        errores.append(err_text)
-                        detalles_errores.append(f"Archivo: {ruta_dbf}\nTraceback:\n{traceback.format_exc()}\n")
-                progreso_var.set(f"{idx+1}/{total_archivos} archivos convertidos")
-                win.update_idletasks()
-
-            # Ahora procesar los pendientes (manual)
-            if pendientes:
-                messagebox.showinfo("Atención", f"{len(pendientes)} archivos requieren intervención manual. Se procesaron {total} archivos automáticamente.")
-                def procesar_siguiente(idx=0):
-                    if idx >= len(pendientes):
-                        messagebox.showinfo("Listo", "Todos los archivos manuales han sido procesados.")
-                        win.destroy()
-                        self.deiconify()
-                        return
-                    ruta_dbf, ruta_excel, tb = pendientes[idx]
-                    def continuar():
-                        procesar_siguiente(idx+1)
-                    self.ventana_tipo_manual(ruta_dbf, ruta_excel, callback=continuar)
-                procesar_siguiente()
-                for ruta_dbf, ruta_excel, tb in pendientes:
-                    detalles_errores.append(f"MANUAL: {ruta_dbf}\nTraceback:\n{tb}\n")
-                    errores.append(f"MANUAL: {ruta_dbf}")
-
+                        try:
+                            df = convertir_dbf_a_dataframe(ruta_dbf)
+                            if len(df) > MAX_FILAS_EXCEL:
+                                omitidos.append(f"{ruta_dbf} (más de {MAX_FILAS_EXCEL} filas)")
+                                continue
+                            guardar_dataframe_como_excel(df, ruta_excel)
+                            total += 1
+                        except Exception as e:
+                            errores.append(f"{ruta_dbf}: {e}")
             msg = f"Archivos convertidos: {total}"
             if omitidos:
                 msg += f"\nOmitidos por tamaño: {len(omitidos)}\n" + "\n".join(omitidos[:3])
                 if len(omitidos) > 3:
                     msg += "\n..."
-            if errores or pendientes:
+            if errores:
                 msg += f"\nErrores: {len(errores)}\n" + "\n".join(errores[:3])
                 if len(errores) > 3:
                     msg += "\n..."
                 messagebox.showwarning("Completado con errores", msg)
                 nota = f"Errores: {' | '.join(errores[:3])}{' ...' if len(errores)>3 else ''}"
                 registrar_evento(f"Convertir Raíz a Excel - {total} - FALLO - {nota}")
-                # Guardar detalles completos de errores en un archivo aparte
-                try:
-                    with open('logs/errores_excel_raiz.txt', 'a', encoding='utf-8') as f:
-                        f.write(f"\n--- Ejecución {total} archivos, {len(errores)} errores ---\n")
-                        for detalle in detalles_errores:
-                            f.write(detalle + "\n")
-                except Exception as logerr:
-                    registrar_evento(f"Error al guardar detalles de errores: {logerr}")
             else:
                 messagebox.showinfo("Completado", msg)
                 registrar_evento(f"Convertir Raíz a Excel - {total} - EXITO")
-                win.destroy()
-                self.deiconify()
+            win.destroy()
+            self.deiconify()
 
         btn_iniciar = tk.Button(win, text="Iniciar Conversión", command=ejecutar, bg="#4A90E2", fg="white", font=("Arial", 12, "bold"))
         btn_iniciar.pack(pady=(30, 10))

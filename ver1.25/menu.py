@@ -5,110 +5,6 @@ import sys
 from interfaz import Aplicacion
 
 class MenuPrincipal(tk.Tk):
-    def ventana_tipo_manual(self, ruta_dbf, ruta_sql, callback=None):
-        import pandas as pd
-        from dbfread import DBF
-        from utilidades import centrar_ventana
-        import tkinter as tk
-        from tkinter import ttk, messagebox
-        dbf = DBF(ruta_dbf, load=True)
-        campos = [(f.name, f.type, f.length) for f in dbf.fields]
-        tipos_sql = ["VARCHAR", "DECIMAL", "DATE", "TIME", "BOOLEAN"]
-
-        win = tk.Toplevel(self)
-        win.title(f"Seleccionar tipos para: {os.path.basename(ruta_dbf)}")
-        ancho, alto = 600, 400
-        centrar_ventana(win, ancho, alto)
-        win.resizable(False, False)
-
-        tk.Label(win, text=f"Archivo: {ruta_dbf}", font=("Arial", 10, "bold"), wraplength=580).pack(pady=8)
-        frame = tk.Frame(win)
-        frame.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
-
-        tree = ttk.Treeview(frame, columns=("Campo", "Tipo DBF", "Longitud", "Tipo SQL", "Tamaño"), show="headings")
-        tree.heading("Campo", text="Campo")
-        tree.heading("Tipo DBF", text="Tipo DBF")
-        tree.heading("Longitud", text="Longitud")
-        tree.heading("Tipo SQL", text="Tipo SQL")
-        tree.heading("Tamaño", text="Tamaño")
-        tree.column("Campo", width=120)
-        tree.column("Tipo DBF", width=70)
-        tree.column("Longitud", width=70)
-        tree.column("Tipo SQL", width=100)
-        tree.column("Tamaño", width=70)
-        tree.pack(fill=tk.BOTH, expand=True)
-
-        # Variables para edición
-        tipo_vars = []
-        tam_vars = []
-        for i, (nombre, tipo, longitud) in enumerate(campos):
-            tipo_var = tk.StringVar(value="VARCHAR")
-            tam_var = tk.StringVar(value=str(longitud))
-            tipo_vars.append(tipo_var)
-            tam_vars.append(tam_var)
-            tree.insert("", "end", iid=i, values=(nombre, tipo, longitud, tipo_var.get(), tam_var.get()))
-
-        def actualizar_tree(event=None):
-            for i in range(len(campos)):
-                tree.set(i, "Tipo SQL", tipo_vars[i].get())
-                tree.set(i, "Tamaño", tam_vars[i].get())
-
-        # Editor de tipo y tamaño
-        edit_frame = tk.Frame(win)
-        edit_frame.pack(pady=5)
-        tk.Label(edit_frame, text="Selecciona un campo para editar:").pack(side=tk.LEFT, padx=5)
-        campo_sel = tk.IntVar(value=0)
-        campo_menu = ttk.Combobox(edit_frame, values=[f[0] for f in campos], state="readonly", width=18, textvariable=campo_sel)
-        campo_menu.pack(side=tk.LEFT, padx=5)
-        tipo_menu = ttk.Combobox(edit_frame, values=tipos_sql, state="readonly", width=10)
-        tipo_menu.pack(side=tk.LEFT, padx=5)
-        tam_entry = tk.Entry(edit_frame, width=7)
-        tam_entry.pack(side=tk.LEFT, padx=5)
-
-        def on_campo_change(event=None):
-            idx = campo_menu.current()
-            tipo_menu.set(tipo_vars[idx].get())
-            tam_entry.delete(0, tk.END)
-            tam_entry.insert(0, tam_vars[idx].get())
-
-        def on_guardar_edicion():
-            idx = campo_menu.current()
-            tipo_vars[idx].set(tipo_menu.get())
-            tam_vars[idx].set(tam_entry.get())
-            actualizar_tree()
-
-        campo_menu.bind("<<ComboboxSelected>>", on_campo_change)
-        tipo_menu.bind("<<ComboboxSelected>>", lambda e: None)
-        tk.Button(edit_frame, text="Guardar cambios", command=on_guardar_edicion).pack(side=tk.LEFT, padx=5)
-        campo_menu.current(0)
-        on_campo_change()
-
-        # Botón para guardar y cerrar
-        def finalizar():
-            # Construir constraints para extraer_schema
-            constraints = {}
-            for i, (nombre, _, _) in enumerate(campos):
-                tipo = tipo_vars[i].get()
-                tam = tam_vars[i].get()
-                if tipo in ["VARCHAR", "DECIMAL"]:
-                    constraints[nombre] = {"Tipo": tipo, "Tamaño": int(tam)}
-                else:
-                    constraints[nombre] = {"Tipo": tipo}
-            try:
-                from schema_extractor import extraer_schema
-                extraer_schema(ruta_dbf, ruta_sql, constraints)
-                messagebox.showinfo("Listo", f"Schema extraído y guardado en {ruta_sql}")
-                win.destroy()
-                if callback:
-                    callback()
-            except Exception as e:
-                messagebox.showerror("Error", f"No se pudo extraer el schema: {e}")
-
-        tk.Button(win, text="Extraer con estos tipos", command=finalizar, bg="#4A90E2", fg="white", font=("Arial", 12, "bold")).pack(pady=10)
-
-        win.grab_set()
-        win.focus_set()
-        win.transient(self)
     def abrir_convertir_raiz_excel(self):
         from funciones_conversion import convertir_dbf_a_dataframe, guardar_dataframe_como_excel, MAX_FILAS_EXCEL
         from tkinter import filedialog, messagebox
@@ -150,7 +46,6 @@ class MenuPrincipal(tk.Tk):
         btn_dest.pack(pady=2)
 
         def ejecutar():
-            import traceback
             from utilidades import registrar_evento
             origen = carpeta_origen.get()
             destino = carpeta_destino.get()
@@ -161,8 +56,6 @@ class MenuPrincipal(tk.Tk):
             errores = []
             total = 0
             omitidos = []
-            detalles_errores = []
-            archivos_dbf = []
             for root, dirs, files in os.walk(origen):
                 rel_path = os.path.relpath(root, origen)
                 dest_dir = os.path.join(destino, rel_path) if rel_path != '.' else destino
@@ -173,77 +66,32 @@ class MenuPrincipal(tk.Tk):
                         ruta_dbf = os.path.join(root, file)
                         nombre = os.path.splitext(file)[0]
                         ruta_excel = os.path.join(dest_dir, f"{nombre}.xlsx")
-                        archivos_dbf.append((ruta_dbf, ruta_excel))
-
-            total_archivos = len(archivos_dbf)
-            progreso_var = tk.StringVar()
-            progreso_var.set(f"0/{total_archivos} archivos convertidos")
-            progreso_label = tk.Label(win, textvariable=progreso_var, font=("Arial", 11, "bold"), fg="#4A90E2")
-            progreso_label.pack(pady=(5, 0))
-
-            pendientes = []
-            for idx, (ruta_dbf, ruta_excel) in enumerate(archivos_dbf):
-                try:
-                    df = convertir_dbf_a_dataframe(ruta_dbf)
-                    if len(df) > MAX_FILAS_EXCEL:
-                        omitidos.append(f"{ruta_dbf} (más de {MAX_FILAS_EXCEL} filas)")
-                        continue
-                    guardar_dataframe_como_excel(df, ruta_excel)
-                    total += 1
-                except Exception as e:
-                    # Si el error es de tipo no reconocido, dejar para el final
-                    if "tipo" in str(e).lower() or "type" in str(e).lower():
-                        pendientes.append((ruta_dbf, ruta_excel, traceback.format_exc()))
-                    else:
-                        err_text = f"{ruta_dbf}: {e}"
-                        errores.append(err_text)
-                        detalles_errores.append(f"Archivo: {ruta_dbf}\nTraceback:\n{traceback.format_exc()}\n")
-                progreso_var.set(f"{idx+1}/{total_archivos} archivos convertidos")
-                win.update_idletasks()
-
-            # Ahora procesar los pendientes (manual)
-            if pendientes:
-                messagebox.showinfo("Atención", f"{len(pendientes)} archivos requieren intervención manual. Se procesaron {total} archivos automáticamente.")
-                def procesar_siguiente(idx=0):
-                    if idx >= len(pendientes):
-                        messagebox.showinfo("Listo", "Todos los archivos manuales han sido procesados.")
-                        win.destroy()
-                        self.deiconify()
-                        return
-                    ruta_dbf, ruta_excel, tb = pendientes[idx]
-                    def continuar():
-                        procesar_siguiente(idx+1)
-                    self.ventana_tipo_manual(ruta_dbf, ruta_excel, callback=continuar)
-                procesar_siguiente()
-                for ruta_dbf, ruta_excel, tb in pendientes:
-                    detalles_errores.append(f"MANUAL: {ruta_dbf}\nTraceback:\n{tb}\n")
-                    errores.append(f"MANUAL: {ruta_dbf}")
-
+                        try:
+                            df = convertir_dbf_a_dataframe(ruta_dbf)
+                            if len(df) > MAX_FILAS_EXCEL:
+                                omitidos.append(f"{ruta_dbf} (más de {MAX_FILAS_EXCEL} filas)")
+                                continue
+                            guardar_dataframe_como_excel(df, ruta_excel)
+                            total += 1
+                        except Exception as e:
+                            errores.append(f"{ruta_dbf}: {e}")
             msg = f"Archivos convertidos: {total}"
             if omitidos:
                 msg += f"\nOmitidos por tamaño: {len(omitidos)}\n" + "\n".join(omitidos[:3])
                 if len(omitidos) > 3:
                     msg += "\n..."
-            if errores or pendientes:
+            if errores:
                 msg += f"\nErrores: {len(errores)}\n" + "\n".join(errores[:3])
                 if len(errores) > 3:
                     msg += "\n..."
                 messagebox.showwarning("Completado con errores", msg)
                 nota = f"Errores: {' | '.join(errores[:3])}{' ...' if len(errores)>3 else ''}"
                 registrar_evento(f"Convertir Raíz a Excel - {total} - FALLO - {nota}")
-                # Guardar detalles completos de errores en un archivo aparte
-                try:
-                    with open('logs/errores_excel_raiz.txt', 'a', encoding='utf-8') as f:
-                        f.write(f"\n--- Ejecución {total} archivos, {len(errores)} errores ---\n")
-                        for detalle in detalles_errores:
-                            f.write(detalle + "\n")
-                except Exception as logerr:
-                    registrar_evento(f"Error al guardar detalles de errores: {logerr}")
             else:
                 messagebox.showinfo("Completado", msg)
                 registrar_evento(f"Convertir Raíz a Excel - {total} - EXITO")
-                win.destroy()
-                self.deiconify()
+            win.destroy()
+            self.deiconify()
 
         btn_iniciar = tk.Button(win, text="Iniciar Conversión", command=ejecutar, bg="#4A90E2", fg="white", font=("Arial", 12, "bold"))
         btn_iniciar.pack(pady=(30, 10))
@@ -370,7 +218,6 @@ class MenuPrincipal(tk.Tk):
 
         # Botón para iniciar el proceso
         def ejecutar():
-            import traceback
             from utilidades import registrar_evento
             origen = carpeta_origen.get()
             destino = carpeta_destino.get()
@@ -380,8 +227,6 @@ class MenuPrincipal(tk.Tk):
                 return
             errores = []
             total = 0
-            detalles_errores = []
-            archivos_dbf = []
             for root, dirs, files in os.walk(origen):
                 rel_path = os.path.relpath(root, origen)
                 dest_dir = os.path.join(destino, rel_path) if rel_path != '.' else destino
@@ -392,60 +237,15 @@ class MenuPrincipal(tk.Tk):
                         ruta_dbf = os.path.join(root, file)
                         nombre = os.path.splitext(file)[0]
                         ruta_sql = os.path.join(dest_dir, f"{nombre}.sql")
-                        archivos_dbf.append((ruta_dbf, ruta_sql))
-
-            total_archivos = len(archivos_dbf)
-            progreso_var = tk.StringVar()
-            progreso_var.set(f"0/{total_archivos} archivos convertidos")
-            progreso_label = tk.Label(win, textvariable=progreso_var, font=("Arial", 11, "bold"), fg="#4A90E2")
-            progreso_label.pack(pady=(5, 0))
-
-            pendientes = []
-            for idx, (ruta_dbf, ruta_sql) in enumerate(archivos_dbf):
-                try:
-                    extraer_schema(ruta_dbf, ruta_sql, constraints={})
-                    total += 1
-                except Exception as e:
-                    # Si el error es de tipo no reconocido, dejar para el final
-                    if "tipo" in str(e).lower() or "type" in str(e).lower():
-                        pendientes.append((ruta_dbf, ruta_sql, traceback.format_exc()))
-                    else:
-                        err_text = f"{ruta_dbf}: {e}"
-                        errores.append(err_text)
-                        detalles_errores.append(f"Archivo: {ruta_dbf}\nTraceback:\n{traceback.format_exc()}\n")
-                progreso_var.set(f"{idx+1}/{total_archivos} archivos convertidos")
-                win.update_idletasks()
-
-            # Ahora procesar los pendientes (manual)
-            if pendientes:
-                messagebox.showinfo("Atención", f"{len(pendientes)} archivos requieren intervención manual. Se procesaron {total} archivos automáticamente.")
-                def procesar_siguiente(idx=0):
-                    if idx >= len(pendientes):
-                        messagebox.showinfo("Listo", "Todos los archivos manuales han sido procesados.")
-                        win.destroy()
-                        self.deiconify()
-                        return
-                    ruta_dbf, ruta_sql, tb = pendientes[idx]
-                    def continuar():
-                        procesar_siguiente(idx+1)
-                    self.ventana_tipo_manual(ruta_dbf, ruta_sql, callback=continuar)
-                procesar_siguiente()
-                for ruta_dbf, ruta_sql, tb in pendientes:
-                    detalles_errores.append(f"MANUAL: {ruta_dbf}\nTraceback:\n{tb}\n")
-                    errores.append(f"MANUAL: {ruta_dbf}")
-
-            if errores or pendientes:
+                        try:
+                            extraer_schema(ruta_dbf, ruta_sql, constraints={})
+                            total += 1
+                        except Exception as e:
+                            errores.append(f"{ruta_dbf}: {e}")
+            if errores:
                 messagebox.showwarning("Completado con errores", f"Se procesaron {total} archivos. Algunos archivos no se procesaron:\n" + "\n".join(errores))
                 nota = f"Errores: {' | '.join(errores[:3])}{' ...' if len(errores)>3 else ''}"
                 registrar_evento(f"Extraer TODO el Schema - {total} - FALLO - {nota}")
-                # Guardar detalles completos de errores en un archivo aparte
-                try:
-                    with open('logs/errores_schema.txt', 'a', encoding='utf-8') as f:
-                        f.write(f"\n--- Ejecución {total} archivos, {len(errores)} errores ---\n")
-                        for detalle in detalles_errores:
-                            f.write(detalle + "\n")
-                except Exception as logerr:
-                    registrar_evento(f"Error al guardar detalles de errores: {logerr}")
             else:
                 messagebox.showinfo("Completado", f"Schemas extraídos correctamente. Total: {total}")
                 registrar_evento(f"Extraer TODO el Schema - {total} - EXITO")
