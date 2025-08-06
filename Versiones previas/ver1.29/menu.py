@@ -498,7 +498,7 @@ class MenuPrincipal(tk.Tk):
         self.frame_botones = frame
 
         button_style = {
-            "width": 18,
+            "width": 16,
             "height": 2,
             "font": ("Arial", 13, "bold"),
             "bg": "#4A90E2",
@@ -509,157 +509,31 @@ class MenuPrincipal(tk.Tk):
             "relief": "raised"
         }
 
-        # Columna izquierda
-        btn_excel = tk.Button(frame, text="Dbf to Excel", command=self.abrir_dfb_to_excel, **button_style)
-        btn_csv = tk.Button(frame, text="Dbf to CSV", command=self.abrir_dfb_to_csv, **button_style)
-        btn_json = tk.Button(frame, text="Dbf a JSON", command=self.abrir_dbf_a_json, **button_style)
-        btn_renombrar = tk.Button(frame, text="Renombrar campos", command=self.abrir_renombrar_campos, **button_style)
+        # Primera columna
+        btn1 = tk.Button(frame, text="Dbf to Excel", command=self.abrir_dfb_to_excel, **button_style)
+        btn11 = tk.Button(frame, text="Convertir Raíz a Excel", command=self.abrir_convertir_raiz_excel, **button_style)
+        btn2 = tk.Button(frame, text="Extraer Schema", command=self.abrir_extraer_schema, **button_style)
+        btn3 = tk.Button(frame, text="Dbf to CSV", command=self.abrir_dfb_to_csv, **button_style)
+        btn4 = tk.Button(frame, text="Dbf a JSON", command=self.abrir_dbf_a_json, **button_style)
+        btn5 = tk.Button(frame, text="Visualizar DBF", command=self.abrir_visualizador_dbf, **button_style)
+        btn6 = tk.Button(frame, text="Renombrar campos", command=self.abrir_renombrar_campos, **button_style)
+        btn7 = tk.Button(frame, text="Fusionar DBFs", command=self.abrir_fusionar_dbfs, **button_style)
+        btn8 = tk.Button(frame, text="Estadísticas DBF", command=self.abrir_estadisticas_dbf, **button_style)
+        btn9 = tk.Button(frame, text="Validar integridad", command=self.abrir_validar_integridad, **button_style)
+        btn10 = tk.Button(frame, text="Extraer TODO el Schema", command=self.abrir_extraer_todo_schema, **button_style)
 
-        # Columna derecha
-        btn_schema = tk.Button(frame, text="Extraer Schema", command=self.abrir_extraer_schema, **button_style)
-        btn_visualizar = tk.Button(frame, text="Visualizar DBF", command=self.abrir_visualizador_dbf, **button_style)
-        btn_fusionar = tk.Button(frame, text="Fusionar DBFs", command=self.abrir_fusionar_dbfs, **button_style)
-        btn_estadisticas = tk.Button(frame, text="Estadísticas DBF", command=self.abrir_estadisticas_dbf, **button_style)
-
-        # Centrado abajo
-        btn_integridad = tk.Button(frame, text="Validar integridad", command=self.abrir_validar_integridad, **button_style)
-        btn_todo_schema = tk.Button(frame, text="Extraer TODO el Schema", command=self.abrir_extraer_todo_schema, **button_style)
-        btn_raiz_excel = tk.Button(frame, text="Convertir Raíz a Excel", command=self.abrir_convertir_raiz_excel, **button_style)
-        btn_integrar_db = tk.Button(frame, text="Integrar Schemas en una Base de Datos", command=self.abrir_integrar_schemas_db, **button_style)
-
-        # Configuraciones
-        btn_config = tk.Button(self, text="Configuraciones", command=self.abrir_configuraciones, font=("Arial", 12, "bold"), bg="#222", fg="white", width=22, height=2)
-        btn_config.pack(side=tk.BOTTOM, pady=12)
-
-        # Distribución en 2 columnas
-        btn_excel.grid(row=0, column=0, padx=10, pady=7)
-        btn_schema.grid(row=0, column=1, padx=10, pady=7)
-        btn_csv.grid(row=1, column=0, padx=10, pady=7)
-        btn_visualizar.grid(row=1, column=1, padx=10, pady=7)
-        btn_json.grid(row=2, column=0, padx=10, pady=7)
-        btn_fusionar.grid(row=2, column=1, padx=10, pady=7)
-        btn_renombrar.grid(row=3, column=0, padx=10, pady=7)
-        btn_estadisticas.grid(row=3, column=1, padx=10, pady=7)
-
-        # Centrado abajo
-        btn_integridad.grid(row=4, column=0, columnspan=2, padx=10, pady=7, sticky="ew")
-        btn_todo_schema.grid(row=5, column=0, columnspan=2, padx=10, pady=7, sticky="ew")
-        btn_raiz_excel.grid(row=6, column=0, columnspan=2, padx=10, pady=7, sticky="ew")
-        btn_integrar_db.grid(row=7, column=0, columnspan=2, padx=10, pady=7, sticky="ew")
-
-    def abrir_integrar_schemas_db(self):
-        from tkinter import filedialog, messagebox
-        import os
-        self.withdraw()
-        win = tk.Toplevel(self)
-        win.title("Integrar Schemas en una Base de Datos")
-        win.resizable(False, False)
-        ancho, alto = 520, 220
-        win.update_idletasks()
-        pantalla_ancho = win.winfo_screenwidth()
-        pantalla_alto = win.winfo_screenheight()
-        x = (pantalla_ancho // 2) - (ancho // 2)
-        y = (pantalla_alto // 2) - (alto // 2)
-        win.geometry(f"{ancho}x{alto}+{x}+{y}")
-
-        tk.Label(win, text="Carpeta RAÍZ con subcarpetas de DBF:").pack(pady=(10,2))
-        carpeta_origen = tk.StringVar()
-        entry_origen = tk.Entry(win, textvariable=carpeta_origen, width=60)
-        entry_origen.pack(pady=2)
-        def sel_origen():
-            carpeta = filedialog.askdirectory(title="Seleccionar carpeta raíz de DBF")
-            if carpeta:
-                carpeta_origen.set(carpeta)
-        btn_origen = tk.Button(win, text="Seleccionar carpeta de entrada", command=sel_origen)
-        btn_origen.pack(pady=2)
-
-        tk.Label(win, text="Carpeta de destino para el archivo .sql:").pack(pady=(10,2))
-        carpeta_destino = tk.StringVar()
-        entry_dest = tk.Entry(win, textvariable=carpeta_destino, width=60)
-        entry_dest.pack(pady=2)
-        def sel_dest():
-            carpeta = filedialog.askdirectory(title="Seleccionar carpeta de destino")
-            if carpeta:
-                carpeta_destino.set(carpeta)
-        btn_dest = tk.Button(win, text="Seleccionar carpeta de salida", command=sel_dest)
-        btn_dest.pack(pady=2)
-
-        def ejecutar():
-            origen = carpeta_origen.get()
-            destino = carpeta_destino.get()
-            if not origen or not destino:
-                messagebox.showerror("Error", "Selecciona ambas carpetas.")
-                return
-            sql_path = os.path.join(destino, "integrated_db.sql")
-            tablas = []
-            for root, dirs, files in os.walk(origen):
-                rel_path = os.path.relpath(root, origen)
-                carpeta_nombre = rel_path.replace(os.sep, "_") if rel_path != '.' else ''
-                for file in files:
-                    if file.lower().endswith('.dbf'):
-                        ruta_dbf = os.path.join(root, file)
-                        nombre = os.path.splitext(file)[0]
-                        tabla_nombre = f"{carpeta_nombre}_{nombre}" if carpeta_nombre else nombre
-                        # Extraer schema y guardar en lista
-                        from schema_extractor import extraer_schema
-                        import tempfile
-                        temp_sql = tempfile.NamedTemporaryFile(delete=False, suffix=".sql")
-                        temp_sql.close()
-                        try:
-                            extraer_schema(ruta_dbf, temp_sql.name, constraints={})
-                            with open(temp_sql.name, 'r', encoding='utf-8') as f:
-                                schema = f.read()
-                            # Renombrar la tabla en el schema
-                            schema = schema.replace(f"CREATE TABLE {nombre}", f"CREATE TABLE {tabla_nombre}")
-                            tablas.append(schema)
-                        except Exception as e:
-                            tablas.append(f"-- Error en {tabla_nombre}: {e}\n")
-                        os.unlink(temp_sql.name)
-            # Unir todos los schemas en un solo archivo
-            with open(sql_path, 'w', encoding='utf-8') as f:
-                for schema in tablas:
-                    f.write(schema + "\n\n")
-            messagebox.showinfo("Listo", f"Base de datos integrada creada en {sql_path}")
-            win.destroy()
-            self.deiconify()
-
-        btn_iniciar = tk.Button(win, text="Integrar Schemas", command=ejecutar, bg="#4A90E2", fg="white", font=("Arial", 12, "bold"))
-        btn_iniciar.pack(pady=(30, 10))
-
-        def cerrar():
-            win.destroy()
-            self.deiconify()
-        win.protocol("WM_DELETE_WINDOW", cerrar)
-
-    def abrir_configuraciones(self):
-        from tkinter import messagebox
-        win = tk.Toplevel(self)
-        win.title("Configuraciones")
-        win.resizable(False, False)
-        ancho, alto = 420, 320
-        self.update_idletasks()
-        x = self.winfo_screenwidth() // 2 - ancho // 2
-        y = self.winfo_screenheight() // 2 - alto // 2
-        win.geometry(f"{ancho}x{alto}+{x}+{y}")
-
-        tk.Label(win, text="Opciones de Configuración", font=("Arial", 15, "bold"), fg="#4A90E2").pack(pady=12)
-        # Modo oscuro
-        modo_oscuro = tk.BooleanVar(value=False)
-        tk.Checkbutton(win, text="Modo oscuro", variable=modo_oscuro, font=("Arial", 12)).pack(anchor="w", padx=20, pady=5)
-        # Buscar actualizaciones
-        def buscar_actualizaciones():
-            import webbrowser
-            webbrowser.open("https://github.com/Chapita98/DBF-to-Everything/tree/main/dist")
-            messagebox.showinfo("Actualizaciones", "Se abrió la página de descargas en el navegador. Descarga manualmente la última versión.")
-        tk.Button(win, text="Buscar actualizaciones", command=buscar_actualizaciones, font=("Arial", 12), bg="#4A90E2", fg="white").pack(fill=tk.X, padx=20, pady=8)
-
-        # Sugerencias de opciones adicionales
-        tk.Label(win, text="Sugerencias de opciones:", font=("Arial", 11, "bold"), fg="#333").pack(anchor="w", padx=20, pady=(18,2))
-        tk.Label(win, text="- Cambiar idioma (español/inglés)\n- Limitar tamaño máximo de archivos DBF\n- Elegir carpeta de logs\n- Elegir carpeta temporal\n- Limpiar archivos temporales\n- Personalizar colores\n- Mostrar changelog\n- Enviar feedback", font=("Arial", 10), fg="#555").pack(anchor="w", padx=28)
-
-        def cerrar():
-            win.destroy()
-        win.protocol("WM_DELETE_WINDOW", cerrar)
+        # Distribución en 2 columnas (6 filas)
+        btn1.grid(row=0, column=0, padx=10, pady=7)
+        btn2.grid(row=0, column=1, padx=10, pady=7)
+        btn3.grid(row=1, column=0, padx=10, pady=7)
+        btn4.grid(row=1, column=1, padx=10, pady=7)
+        btn5.grid(row=2, column=0, padx=10, pady=7)
+        btn6.grid(row=2, column=1, padx=10, pady=7)
+        btn7.grid(row=3, column=0, padx=10, pady=7)
+        btn8.grid(row=3, column=1, padx=10, pady=7)
+        btn9.grid(row=4, column=0, columnspan=2, padx=10, pady=7, sticky="ew")
+        btn10.grid(row=5, column=0, columnspan=2, padx=10, pady=7, sticky="ew")
+        btn11.grid(row=6, column=0, columnspan=2, padx=10, pady=7, sticky="ew")
 
     # --- Nuevas funciones de botones ---
     def abrir_extraer_schema(self):
