@@ -491,21 +491,21 @@ class MenuPrincipal(tk.Tk):
     def crear_widgets(self):
         # Título centrado arriba de los botones
         titulo = tk.Label(self, text=".dbf To Everything", font=("Arial", 20, "bold"), fg="#333")
-        titulo.pack(pady=(18, 8))
+        titulo.pack(pady=(18, 6)) # Espacio entre el título y los botones
 
-        frame = tk.Frame(self)
-        frame.place(relx=0.5, rely=0.5, anchor="center")
-        self.frame_botones = frame
+        frame = tk.Frame(self) # Frame para contener los botones
+        frame.place(relx=0.5, rely=0.5, anchor="center") # Centrar el frame de botones
+        self.frame_botones = frame # Guardar referencia al frame para uso posterior
 
         button_style = {
-            "width": 18,
-            "height": 2,
-            "font": ("Arial", 13, "bold"),
+            "width": 16,  # Ancho de los botones
+            "height": 2,  # Alto de los botones
+            "font": ("Arial", 12, "bold"),
             "bg": "#4A90E2",
             "fg": "white",
             "activebackground": "#357ABD",
             "activeforeground": "white",
-            "bd": 2,
+            "bd": 1, # Borde de los botones
             "relief": "raised"
         }
 
